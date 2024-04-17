@@ -3,9 +3,41 @@ import '../css/timescale.css'; // Import CSS for styling
 import { fetchData } from '../services/dataService';
 
 const TimeScale = () => {
-  const [duration, setDuration] = useState('1hr'); // State to track selected duration
-  const [data, setData] = useState([]); 
-  const [startTime,setStartTime] = useState("2024-01-21T15:");
+  const [duration, setDuration] = useState('8hr'); // State to track selected duration
+  const [data, setData] = useState([]);
+  const [startTime, setStartTime] = useState("2024-01-21");
+  const [tableData, setTableData] = useState([]);
+  const countOneAndZeros = () => {
+    const tableData = [];
+    const hourCounts = {};
+
+    // Iterate through the data
+    data.forEach(doc => {
+      const timestamp = new Date(doc.ts);
+      const hour = timestamp.getHours();
+
+      // Initialize counts for each hour
+      if (!hourCounts[hour]) {
+        hourCounts[hour] = { ones: 0, zeros: 0, missingData: 0 };
+      }
+
+      // Update counts based on machine status
+      if (doc.machine_status === 1) {
+        hourCounts[hour].ones++;
+      } else if (doc.machine_status === 0) {
+        hourCounts[hour].zeros++;
+      }
+    });
+    for (const hour in hourCounts) {
+      tableData.push({
+        hour: `${hour}:00 - ${hour + 1}:00`,
+        ones: hourCounts[hour].ones,
+        zeros: hourCounts[hour].zeros,
+        missingData: 3600 - (hourCounts[hour].ones + hourCounts[hour].zeros)
+      });
+      setTableData([...tableData]);
+    }
+  }
   useEffect(() => {
     fetchData(startTime)
       .then((data) => {
@@ -15,18 +47,23 @@ const TimeScale = () => {
       .catch((error) => {
         console.log(error);
       });
-  }, [duration,startTime]);
+    countOneAndZeros();
+  }, [duration, startTime]);
   // Calculate segment width based on number of data points
   const segmentWidth = 100 / data.length;
 
   // Function to handle duration change
   const handleDurationChange = (newDuration) => {
-    if(newDuration==="next")
-    {
+    if (newDuration === "next") {
       setStartTime("2024-01-21T16:")
-    } 
-    else if(newDuration==="8hr"){
+    }
+    else if (newDuration === "8hr") {
+      setDuration("8hr")
       setStartTime("2024-01-21")
+    }
+    else if (newDuration === "1hr") {
+      setDuration("1hr")
+      setStartTime("2024-01-21T15:")
     }
   };
 
@@ -59,6 +96,27 @@ const TimeScale = () => {
           ))}
         </div>
       </div>
+      <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+        <thead>
+          <tr>
+            <th style={{ border: '1px solid black', padding: '8px' }}>Hour</th>
+            <th style={{ border: '1px solid black', padding: '8px' }}>Number of 1s</th>
+            <th style={{ border: '1px solid black', padding: '8px' }}>Number of 0s</th>
+            <th style={{ border: '1px solid black', padding: '8px' }}>Number of Missing Data</th>
+          </tr>
+        </thead>
+        <tbody>
+          {tableData.map(row => (
+            <tr key={row.hour}>
+              <td style={{ border: '1px solid black', padding: '8px' }}>{row.hour}</td>
+              <td style={{ border: '1px solid black', padding: '8px' }}>{row.ones}</td>
+              <td style={{ border: '1px solid black', padding: '8px' }}>{row.zeros}</td>
+              <td style={{ border: '1px solid black', padding: '8px' }}>{row.missingData}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
     </div>
   );
 };

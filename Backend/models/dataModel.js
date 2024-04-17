@@ -6,7 +6,7 @@ const dataSchema = new mongoose.Schema({
         required: true
     },
     ts: {
-        type: Date,
+        type: String, // Change the data type to String
         required: true
     },
     machine_status: {
@@ -19,8 +19,6 @@ const dataSchema = new mongoose.Schema({
     }
 });
 
-// Specify the collection name explicitly
 const Data = mongoose.model('Data', dataSchema, 'sample-data');
 
 module.exports = Data;
-
